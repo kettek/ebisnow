@@ -241,7 +241,7 @@ func main() {
 				case <-e.trayClearSnowItem.ClickedCh:
 					//e.piledSnow.Fill(color.Transparent)
 					e.snowPlowing = true
-					e.snowPlowX = -float64(snowplowImages[e.snowPlowIndex].Bounds().Dx())
+					e.snowPlowX = -float64(snowplowImages[e.snowPlowIndex].Bounds().Dx()*2 - 1)
 				case <-e.trayPileSnowItem.ClickedCh:
 					e.pileSnow = !e.pileSnow
 					if e.pileSnow {
