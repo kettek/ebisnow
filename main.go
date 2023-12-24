@@ -216,11 +216,16 @@ func main() {
 
 	e.trayFuncStart, e.trayFuncEnd = systray.RunWithExternalLoop(func() {
 		systray.SetIcon(icoBytes)
-		fmt.Println("apparently ready")
 		systray.SetTitle("EbiSnow")
 		systray.SetTooltip("EbiSnow")
-		e.trayWindItem = systray.AddMenuItem("Wind - 3", "Change wind intensity")
+		e.trayWindItem = systray.AddMenuItem("Wind", "Change wind intensity")
 		e.trayWindItem.Enable()
+		wind1 := e.trayWindItem.AddSubMenuItemCheckbox("None", "Change wind intensity", false)
+		wind2 := e.trayWindItem.AddSubMenuItemCheckbox("Low", "Change wind intensity", false)
+		wind3 := e.trayWindItem.AddSubMenuItemCheckbox("Moderate", "Change wind intensity", false)
+		wind4 := e.trayWindItem.AddSubMenuItemCheckbox("Strong", "Change wind intensity", true)
+		wind5 := e.trayWindItem.AddSubMenuItemCheckbox("Extreme", "Change wind intensity", false)
+		winds := []*systray.MenuItem{wind1, wind2, wind3, wind4, wind5}
 		e.trayPileSnowItem = systray.AddMenuItem("Pile snow", "Pile snow")
 		e.trayPileSnowItem.Check()
 		e.trayClearSnowItem = systray.AddMenuItem("Snowplow", "Clear the snow")
@@ -232,14 +237,42 @@ func main() {
 			for {
 				select {
 				case <-e.trayWindItem.ClickedCh:
-					e.windIntensity++
-					if e.windIntensity == 6 {
-						e.windIntensity = 0
-					}
+				case <-wind1.ClickedCh:
+					e.windIntensity = 0
 					e.RandomizeWind()
-					e.trayWindItem.SetTitle(fmt.Sprintf("Wind - %d", int(e.windIntensity)))
+					for _, w := range winds {
+						w.Uncheck()
+					}
+					wind1.Check()
+				case <-wind2.ClickedCh:
+					e.windIntensity = 1
+					e.RandomizeWind()
+					for _, w := range winds {
+						w.Uncheck()
+					}
+					wind2.Check()
+				case <-wind3.ClickedCh:
+					e.windIntensity = 3
+					e.RandomizeWind()
+					for _, w := range winds {
+						w.Uncheck()
+					}
+					wind3.Check()
+				case <-wind4.ClickedCh:
+					e.windIntensity = 5
+					e.RandomizeWind()
+					for _, w := range winds {
+						w.Uncheck()
+					}
+					wind4.Check()
+				case <-wind5.ClickedCh:
+					e.windIntensity = 6
+					e.RandomizeWind()
+					for _, w := range winds {
+						w.Uncheck()
+					}
+					wind5.Check()
 				case <-e.trayClearSnowItem.ClickedCh:
-					//e.piledSnow.Fill(color.Transparent)
 					e.snowPlowing = true
 					e.snowPlowX = -float64(snowplowImages[e.snowPlowIndex].Bounds().Dx()*2 - 1)
 				case <-e.trayPileSnowItem.ClickedCh:
