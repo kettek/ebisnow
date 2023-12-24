@@ -52,6 +52,8 @@ type EbiSnow struct {
 	snowPlowing        bool
 	snowPlowIndex      int
 	snowPlowClearImage *ebiten.Image
+	//
+	stopped bool
 }
 
 func (e *EbiSnow) Wind() (dir, power float64) {
@@ -75,6 +77,10 @@ func (e *EbiSnow) Update() error {
 		for i := 0; i < 200; i++ {
 			e.AddSnow()
 		}
+	}
+
+	if e.stopped {
+		return nil
 	}
 
 	e.lastWindChange++
@@ -147,7 +153,12 @@ func (e *EbiSnow) Update() error {
 }
 
 func (e *EbiSnow) Draw(screen *ebiten.Image) {
-	screen.Fill(color.Transparent)
+	//screen.Fill(color.Transparent)
+
+	if e.stopped {
+		return
+	}
+
 	for _, s := range e.snow {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(s.x, s.y)
@@ -250,12 +261,21 @@ func main() {
 		e.trayClearSnowItem = systray.AddMenuItem("Snowplow", "Clear the snow")
 		e.trayClearSnowItem.Enable()
 		selectSnowImage := systray.AddMenuItem("Select image", "Select image to use for snow")
+		paused := systray.AddMenuItemCheckbox("Pause", "Pause ebisnow", false)
 		systray.AddSeparator()
 		e.trayQuitItem = systray.AddMenuItem("Quit", "Quit ebisnow")
 		e.trayQuitItem.Enable()
 		go func() {
 			for {
 				select {
+				case <-paused.ClickedCh:
+					if paused.Checked() {
+						e.stopped = false
+						paused.Uncheck()
+					} else {
+						e.stopped = true
+						paused.Check()
+					}
 				case <-selectSnowImage.ClickedCh:
 					if src, err := dialog.File().Filter("Image files", "png", "jpg", "jpeg").Title("Select image").Load(); err == nil {
 						if b, err := os.ReadFile(src); err == nil {
