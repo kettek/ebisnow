@@ -44,7 +44,9 @@ type EbiSnow struct {
 	lastWindPower  float64
 	lastWindChange int
 	windIntensity  float64
-
+	//
+	gravity float64
+	//
 	snowPlowX          float64
 	snowPlowIterator   int
 	snowPlowing        bool
@@ -110,7 +112,7 @@ func (e *EbiSnow) Update() error {
 			y += math.Sin(wd) * wp
 		}
 
-		y += s.speed
+		y += s.speed * e.gravity
 
 		if !e.pileSnow {
 			s.x = x
@@ -211,6 +213,7 @@ func main() {
 		firstRun:      true,
 		pileSnow:      true,
 		windIntensity: 3,
+		gravity:       1.0,
 	}
 	e.RandomizeWind()
 
@@ -226,6 +229,22 @@ func main() {
 		wind4 := e.trayWindItem.AddSubMenuItemCheckbox("Strong", "Change wind intensity", true)
 		wind5 := e.trayWindItem.AddSubMenuItemCheckbox("Extreme", "Change wind intensity", false)
 		winds := []*systray.MenuItem{wind1, wind2, wind3, wind4, wind5}
+
+		gravityItem := systray.AddMenuItem("Gravity", "Change gravity")
+		gravity1 := gravityItem.AddSubMenuItemCheckbox("None", "Change gravity", false)
+		gravity2 := gravityItem.AddSubMenuItemCheckbox("Low", "Change gravity", false)
+		gravity3 := gravityItem.AddSubMenuItemCheckbox("Moderate", "Change gravity", true)
+		gravity4 := gravityItem.AddSubMenuItemCheckbox("Strong", "Change gravity", false)
+		gravity5 := gravityItem.AddSubMenuItemCheckbox("Extreme", "Change gravity", false)
+		gravities := []*systray.MenuItem{gravity1, gravity2, gravity3, gravity4, gravity5}
+
+		countItem := systray.AddMenuItem("Snow count", "Change snow count")
+		count1 := countItem.AddSubMenuItemCheckbox("Low", "Change snow count", false)
+		count2 := countItem.AddSubMenuItemCheckbox("Moderate", "Change snow count", true)
+		count3 := countItem.AddSubMenuItemCheckbox("High", "Change snow count", false)
+		count4 := countItem.AddSubMenuItemCheckbox("Extreme", "Change snow count", false)
+		counts := []*systray.MenuItem{count1, count2, count3, count4}
+
 		e.trayPileSnowItem = systray.AddMenuItem("Pile snow", "Pile snow")
 		e.trayPileSnowItem.Check()
 		e.trayClearSnowItem = systray.AddMenuItem("Snowplow", "Clear the snow")
@@ -280,6 +299,72 @@ func main() {
 						w.Uncheck()
 					}
 					wind5.Check()
+				case <-gravity1.ClickedCh:
+					e.gravity = 0
+					for _, g := range gravities {
+						g.Uncheck()
+					}
+					gravity1.Check()
+				case <-gravity2.ClickedCh:
+					e.gravity = 0.50
+					for _, g := range gravities {
+						g.Uncheck()
+					}
+					gravity2.Check()
+				case <-gravity3.ClickedCh:
+					e.gravity = 1.0
+					for _, g := range gravities {
+						g.Uncheck()
+					}
+					gravity3.Check()
+				case <-gravity4.ClickedCh:
+					e.gravity = 2.0
+					for _, g := range gravities {
+						g.Uncheck()
+					}
+					gravity4.Check()
+				case <-gravity5.ClickedCh:
+					e.gravity = 4.0
+					for _, g := range gravities {
+						g.Uncheck()
+					}
+					gravity5.Check()
+				case <-count1.ClickedCh:
+					e.snow = e.snow[:0]
+					for i := 0; i < 100; i++ {
+						e.AddSnow()
+					}
+					for _, c := range counts {
+						c.Uncheck()
+					}
+					count1.Check()
+				case <-count2.ClickedCh:
+					e.snow = e.snow[:0]
+					for i := 0; i < 200; i++ {
+						e.AddSnow()
+					}
+					for _, c := range counts {
+						c.Uncheck()
+					}
+					count2.Check()
+				case <-count3.ClickedCh:
+					e.snow = e.snow[:0]
+					for i := 0; i < 400; i++ {
+						e.AddSnow()
+					}
+					for _, c := range counts {
+						c.Uncheck()
+					}
+					count3.Check()
+				case <-count4.ClickedCh:
+					e.snow = e.snow[:0]
+					for i := 0; i < 800; i++ {
+						e.AddSnow()
+					}
+					for _, c := range counts {
+						c.Uncheck()
+					}
+					count4.Check()
 				case <-e.trayClearSnowItem.ClickedCh:
 					e.snowPlowing = true
 					e.snowPlowX = -float64(snowplowImages[e.snowPlowIndex].Bounds().Dx()*2 - 1)
