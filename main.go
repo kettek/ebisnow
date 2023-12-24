@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"image"
 	"image/color"
+	_ "image/png"
 	"math"
 	"math/rand"
 
@@ -14,6 +17,9 @@ import (
 
 //go:embed icon.ico
 var icoBytes []byte
+
+//go:embed snowplow.png
+var snowplowBytes []byte
 
 type EbiSnow struct {
 	snow          []*Snow
@@ -33,6 +39,12 @@ type EbiSnow struct {
 	lastWindPower  float64
 	lastWindChange int
 	windIntensity  float64
+
+	snowPlowX          float64
+	snowPlowIterator   int
+	snowPlowing        bool
+	snowPlowIndex      int
+	snowPlowClearImage *ebiten.Image
 }
 
 func (e *EbiSnow) Wind() (dir, power float64) {
@@ -64,6 +76,23 @@ func (e *EbiSnow) Update() error {
 	}
 
 	wd, wp := e.Wind()
+
+	if e.snowPlowing {
+		e.snowPlowIterator++
+		if e.snowPlowIterator > 5 {
+			e.snowPlowIndex = (e.snowPlowIndex + 1) % 4
+			e.snowPlowIterator = 0
+		}
+		e.snowPlowX++
+		if e.snowPlowX > float64(e.width+snowImage.Bounds().Dx()) {
+			e.snowPlowX = 0
+			e.snowPlowing = false
+		}
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(e.snowPlowX+float64(snowplowImages[e.snowPlowIndex].Bounds().Dx())*2, 0)
+		op.Blend = ebiten.BlendClear
+		e.piledSnow.DrawImage(e.snowPlowClearImage, op)
+	}
 
 	for _, s := range e.snow {
 		s.lifetime++
@@ -114,11 +143,18 @@ func (e *EbiSnow) Draw(screen *ebiten.Image) {
 		screen.DrawImage(s.image, op)
 	}
 	screen.DrawImage(e.piledSnow, nil)
+	if e.snowPlowing {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Scale(2.0, 2.0)
+		op.GeoM.Translate(e.snowPlowX, float64(e.height-snowplowImages[e.snowPlowIndex].Bounds().Dy()*2))
+		screen.DrawImage(snowplowImages[e.snowPlowIndex], op)
+	}
 }
 
 func (e *EbiSnow) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	if e.width != outsideWidth || e.height != outsideHeight {
 		e.piledSnow = ebiten.NewImage(outsideWidth, outsideHeight)
+		e.snowPlowClearImage = ebiten.NewImage(1, outsideHeight)
 		e.width, e.height = outsideWidth, outsideHeight
 	}
 	return outsideWidth, outsideHeight
@@ -134,10 +170,19 @@ func (e *EbiSnow) AddSnow() {
 }
 
 var snowImage *ebiten.Image
+var snowplowImages []*ebiten.Image
 
 func init() {
 	snowImage = ebiten.NewImage(1, 1)
 	snowImage.Fill(color.White)
+
+	{
+		img, _, _ := image.Decode(bytes.NewReader(snowplowBytes))
+		snowplowImage := ebiten.NewImageFromImage(img)
+		for i := 0; i < 4; i++ {
+			snowplowImages = append(snowplowImages, snowplowImage.SubImage(image.Rect(i*snowplowImage.Bounds().Dx()/4, 0, (i+1)*snowplowImage.Bounds().Dx()/4, snowplowImage.Bounds().Dy())).(*ebiten.Image))
+		}
+	}
 }
 
 type Snow struct {
@@ -181,7 +226,9 @@ func main() {
 					e.RandomizeWind()
 					e.trayWindItem.SetTitle(fmt.Sprintf("Wind - %d", int(e.windIntensity)))
 				case <-e.trayClearSnowItem.ClickedCh:
-					e.piledSnow.Fill(color.Transparent)
+					//e.piledSnow.Fill(color.Transparent)
+					e.snowPlowing = true
+					e.snowPlowX = -float64(snowplowImages[e.snowPlowIndex].Bounds().Dx())
 				case <-e.trayQuitItem.ClickedCh:
 					fmt.Println("quit")
 				}
