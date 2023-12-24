@@ -225,8 +225,8 @@ func main() {
 		e.trayWindItem.Enable()
 		wind1 := e.trayWindItem.AddSubMenuItemCheckbox("None", "Change wind intensity", false)
 		wind2 := e.trayWindItem.AddSubMenuItemCheckbox("Low", "Change wind intensity", false)
-		wind3 := e.trayWindItem.AddSubMenuItemCheckbox("Moderate", "Change wind intensity", false)
-		wind4 := e.trayWindItem.AddSubMenuItemCheckbox("Strong", "Change wind intensity", true)
+		wind3 := e.trayWindItem.AddSubMenuItemCheckbox("Moderate", "Change wind intensity", true)
+		wind4 := e.trayWindItem.AddSubMenuItemCheckbox("Strong", "Change wind intensity", false)
 		wind5 := e.trayWindItem.AddSubMenuItemCheckbox("Extreme", "Change wind intensity", false)
 		winds := []*systray.MenuItem{wind1, wind2, wind3, wind4, wind5}
 
@@ -293,7 +293,7 @@ func main() {
 					}
 					wind4.Check()
 				case <-wind5.ClickedCh:
-					e.windIntensity = 6
+					e.windIntensity = 7
 					e.RandomizeWind()
 					for _, w := range winds {
 						w.Uncheck()
