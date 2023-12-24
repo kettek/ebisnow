@@ -27,10 +27,12 @@ type EbiSnow struct {
 	width, height int
 	firstRun      bool
 	piledSnow     *ebiten.Image
+	pileSnow      bool
 	//
 	trayFuncStart     func()
 	trayFuncEnd       func()
 	trayQuitItem      *systray.MenuItem
+	trayPileSnowItem  *systray.MenuItem
 	trayWindItem      *systray.MenuItem
 	trayClearSnowItem *systray.MenuItem
 	//
@@ -108,6 +110,11 @@ func (e *EbiSnow) Update() error {
 
 		y += s.speed
 
+		if !e.pileSnow {
+			s.x = x
+			s.y = y
+			continue
+		}
 		_, _, _, a := e.piledSnow.At(int(x), int(math.Floor(s.y+1))).RGBA()
 
 		if a > 0 {
@@ -143,7 +150,9 @@ func (e *EbiSnow) Draw(screen *ebiten.Image) {
 		op.GeoM.Scale(s.Size())
 		screen.DrawImage(s.image, op)
 	}
-	screen.DrawImage(e.piledSnow, nil)
+	if e.pileSnow {
+		screen.DrawImage(e.piledSnow, nil)
+	}
 	if e.snowPlowing {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Scale(2.0, 2.0)
@@ -200,6 +209,7 @@ func (s *Snow) Size() (w, h float64) {
 func main() {
 	e := &EbiSnow{
 		firstRun:      true,
+		pileSnow:      true,
 		windIntensity: 3,
 	}
 	e.RandomizeWind()
@@ -211,6 +221,8 @@ func main() {
 		systray.SetTooltip("EbiSnow")
 		e.trayWindItem = systray.AddMenuItem("Wind - 3", "Change wind intensity")
 		e.trayWindItem.Enable()
+		e.trayPileSnowItem = systray.AddMenuItem("Pile snow", "Pile snow")
+		e.trayPileSnowItem.Check()
 		e.trayClearSnowItem = systray.AddMenuItem("Snowplow", "Clear the snow")
 		e.trayClearSnowItem.Enable()
 		systray.AddSeparator()
@@ -230,6 +242,13 @@ func main() {
 					//e.piledSnow.Fill(color.Transparent)
 					e.snowPlowing = true
 					e.snowPlowX = -float64(snowplowImages[e.snowPlowIndex].Bounds().Dx())
+				case <-e.trayPileSnowItem.ClickedCh:
+					e.pileSnow = !e.pileSnow
+					if e.pileSnow {
+						e.trayPileSnowItem.Check()
+					} else {
+						e.trayPileSnowItem.Uncheck()
+					}
 				case <-e.trayQuitItem.ClickedCh:
 					os.Exit(0)
 				}
