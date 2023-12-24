@@ -140,6 +140,7 @@ func main() {
 	if err := ebiten.RunGameWithOptions(e, &ebiten.RunGameOptions{
 		ScreenTransparent: true,
 		SkipTaskbar:       true,
+		InitUnfocused:     true,
 	}); err != nil {
 		panic(err)
 	}
