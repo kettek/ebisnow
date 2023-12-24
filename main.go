@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	_ "image/jpeg"
 	_ "image/png"
 	"math"
 	"math/rand"
@@ -14,6 +15,7 @@ import (
 
 	"fyne.io/systray"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/sqweek/dialog"
 )
 
 //go:embed icon.ico
@@ -125,7 +127,7 @@ func (e *EbiSnow) Update() error {
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(x, y)
 			op.GeoM.Scale(s.Size())
-			e.piledSnow.DrawImage(s.image, op)
+			e.piledSnow.DrawImage(snowImage, op)
 			s.y = 0
 			s.x = rand.Float64() * float64(e.width)
 		} else {
@@ -148,7 +150,7 @@ func (e *EbiSnow) Draw(screen *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(s.x, s.y)
 		op.GeoM.Scale(s.Size())
-		screen.DrawImage(s.image, op)
+		screen.DrawImage(snowImage, op)
 	}
 	if e.pileSnow {
 		screen.DrawImage(e.piledSnow, nil)
@@ -172,7 +174,6 @@ func (e *EbiSnow) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHe
 
 func (e *EbiSnow) AddSnow() {
 	e.snow = append(e.snow, &Snow{
-		image: snowImage,
 		x:     rand.Float64() * float64(e.width),
 		y:     -rand.Float64() * float64(e.height),
 		speed: math.Max(0.5, rand.Float64()*2),
@@ -196,7 +197,6 @@ func init() {
 }
 
 type Snow struct {
-	image    *ebiten.Image
 	x, y     float64
 	speed    float64
 	lifetime int
@@ -230,13 +230,21 @@ func main() {
 		e.trayPileSnowItem.Check()
 		e.trayClearSnowItem = systray.AddMenuItem("Snowplow", "Clear the snow")
 		e.trayClearSnowItem.Enable()
+		selectSnowImage := systray.AddMenuItem("Select image", "Select image to use for snow")
 		systray.AddSeparator()
 		e.trayQuitItem = systray.AddMenuItem("Quit", "Quit ebisnow")
 		e.trayQuitItem.Enable()
 		go func() {
 			for {
 				select {
-				case <-e.trayWindItem.ClickedCh:
+				case <-selectSnowImage.ClickedCh:
+					if src, err := dialog.File().Filter("Image files", "png", "jpg", "jpeg").Title("Select image").Load(); err == nil {
+						if b, err := os.ReadFile(src); err == nil {
+							if img, _, err := image.Decode(bytes.NewReader(b)); err == nil {
+								snowImage = ebiten.NewImageFromImage(img)
+							}
+						}
+					}
 				case <-wind1.ClickedCh:
 					e.windIntensity = 0
 					e.RandomizeWind()
