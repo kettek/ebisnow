@@ -8,6 +8,7 @@ import (
 	_ "image/png"
 	"math"
 	"math/rand"
+	"os"
 
 	_ "embed"
 
@@ -230,7 +231,7 @@ func main() {
 					e.snowPlowing = true
 					e.snowPlowX = -float64(snowplowImages[e.snowPlowIndex].Bounds().Dx())
 				case <-e.trayQuitItem.ClickedCh:
-					fmt.Println("quit")
+					os.Exit(0)
 				}
 			}
 		}()
