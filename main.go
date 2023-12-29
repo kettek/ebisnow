@@ -264,7 +264,7 @@ func main() {
 		count4 := countItem.AddSubMenuItemCheckbox("Extreme", "Change snow count", false)
 		counts := []*systray.MenuItem{count1, count2, count3, count4}
 
-		e.trayPileSnowItem = systray.AddMenuItem("Pile snow", "Pile snow")
+		e.trayPileSnowItem = systray.AddMenuItemCheckbox("Pile snow", "Pile snow", true)
 		e.trayPileSnowItem.Check()
 		e.trayClearSnowItem = systray.AddMenuItem("Snowplow", "Clear the snow")
 		e.trayClearSnowItem.Enable()
