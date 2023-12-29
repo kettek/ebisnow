@@ -35,12 +35,13 @@ type EbiSnow struct {
 	piledSnow     *ebiten.Image
 	pileSnow      bool
 	//
-	trayFuncStart     func()
-	trayFuncEnd       func()
-	trayQuitItem      *systray.MenuItem
-	trayPileSnowItem  *systray.MenuItem
-	trayWindItem      *systray.MenuItem
-	trayClearSnowItem *systray.MenuItem
+	trayFuncStart      func()
+	trayFuncEnd        func()
+	trayQuitItem       *systray.MenuItem
+	trayPileSnowItem   *systray.MenuItem
+	traySquashSnowItem *systray.MenuItem
+	trayWindItem       *systray.MenuItem
+	trayClearSnowItem  *systray.MenuItem
 	//
 	windDir        float64
 	windPower      float64
@@ -49,7 +50,10 @@ type EbiSnow struct {
 	lastWindChange int
 	windIntensity  float64
 	//
-	gravity float64
+	shouldSquash bool
+	gravity      float64
+	lastSquash   int
+	squashCanvas *ebiten.Image
 	//
 	snowPlowX          float64
 	snowPlowIterator   int
@@ -85,6 +89,24 @@ func (e *EbiSnow) Update() error {
 
 	if e.stopped {
 		return nil
+	}
+
+	if e.shouldSquash {
+		e.lastSquash++
+		if e.lastSquash > 10000 {
+			e.squashCanvas.Clear()
+			op := ebiten.DrawImageOptions{}
+
+			//r := 1.0 - 1.0/float64(e.height)
+			r := 0.8
+
+			op.GeoM.Scale(1, r)
+			op.GeoM.Translate(0, (1.0-r)*float64(e.height))
+			e.squashCanvas.DrawImage(e.piledSnow, &op)
+			e.piledSnow.Clear()
+			e.piledSnow.DrawImage(e.squashCanvas, nil)
+			e.lastSquash = 0
+		}
 	}
 
 	e.lastWindChange++
@@ -183,6 +205,7 @@ func (e *EbiSnow) Draw(screen *ebiten.Image) {
 func (e *EbiSnow) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	if e.width != outsideWidth || e.height != outsideHeight {
 		e.piledSnow = ebiten.NewImage(outsideWidth, outsideHeight)
+		e.squashCanvas = ebiten.NewImage(outsideWidth, outsideHeight)
 		e.snowPlowClearImage = ebiten.NewImage(1, outsideHeight)
 		e.width, e.height = outsideWidth, outsideHeight
 	}
@@ -226,6 +249,7 @@ func (s *Snow) Size() (w, h float64) {
 func main() {
 	e := &EbiSnow{
 		firstRun:      true,
+		shouldSquash:  true,
 		pileSnow:      true,
 		windIntensity: 3,
 		gravity:       1.0,
@@ -266,6 +290,8 @@ func main() {
 
 		e.trayPileSnowItem = systray.AddMenuItemCheckbox("Pile snow", "Pile snow", true)
 		e.trayPileSnowItem.Check()
+		e.traySquashSnowItem = systray.AddMenuItemCheckbox("Pack snow", "Visually pack snow", true)
+		e.traySquashSnowItem.Check()
 		e.trayClearSnowItem = systray.AddMenuItem("Snowplow", "Clear the snow")
 		e.trayClearSnowItem.Enable()
 		selectSnowImage := systray.AddMenuItem("Select image", "Select image to use for snow")
@@ -402,6 +428,13 @@ func main() {
 						e.trayPileSnowItem.Check()
 					} else {
 						e.trayPileSnowItem.Uncheck()
+					}
+				case <-e.traySquashSnowItem.ClickedCh:
+					e.shouldSquash = !e.shouldSquash
+					if e.shouldSquash {
+						e.traySquashSnowItem.Check()
+					} else {
+						e.traySquashSnowItem.Uncheck()
 					}
 				case <-e.trayQuitItem.ClickedCh:
 					os.Exit(0)
