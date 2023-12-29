@@ -10,6 +10,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"runtime"
 
 	_ "embed"
 
@@ -20,6 +21,9 @@ import (
 
 //go:embed icon.ico
 var icoBytes []byte
+
+//go:embed icon.png
+var pngBytes []byte
 
 //go:embed snowplow.png
 var snowplowBytes []byte
@@ -229,7 +233,11 @@ func main() {
 	e.RandomizeWind()
 
 	e.trayFuncStart, e.trayFuncEnd = systray.RunWithExternalLoop(func() {
-		systray.SetIcon(icoBytes)
+		if runtime.GOOS == "windows" {
+			systray.SetIcon(icoBytes)
+		} else {
+			systray.SetIcon(pngBytes)
+		}
 		systray.SetTitle("EbiSnow")
 		systray.SetTooltip("EbiSnow")
 		e.trayWindItem = systray.AddMenuItem("Wind", "Change wind intensity")
